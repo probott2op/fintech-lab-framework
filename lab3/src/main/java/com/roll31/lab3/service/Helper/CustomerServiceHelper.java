@@ -226,6 +226,7 @@ public class CustomerServiceHelper {
         cust_POI.setStart(customerPoiDTO.getStart());
         cust_POI.setEnd(customerPoiDTO.getEnd());
         // setting the audit log
+        cust_POI.setLdbid(cust_DETAILS.get().getLdbid());
         setAuditLog(cust_POI);
         return cust_POI;
     }

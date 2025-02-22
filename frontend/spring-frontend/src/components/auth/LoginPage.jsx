@@ -2,6 +2,10 @@ import Footer from "../common/Footer";
 import Header from "../common/Header";
 
 function LoginPage() {
+  function Login() {
+   
+  }
+
     return (
         <div className="container-fluid">
       <Header />
@@ -55,7 +59,7 @@ function LoginPage() {
                     </a>
                   </div>
   
-                  <button type="submit" className="btn btn-primary w-100 py-2 mb-3">
+                  <button type="submit" className="btn btn-primary w-100 py-2 mb-3" onClick={Login}>
                     Login
                   </button>
                 </form>
@@ -84,3 +88,29 @@ function LoginPage() {
   
   export default LoginPage;
   
+
+  // const username = document.getElementById("username").value;
+  // const password = document.getElementById("password").value;
+
+  // fetch("http://localhost:8080/api/auth/login", {
+  //   method: "POST",
+  //   headers: {
+  //     "Content-Type": "application/json",
+  //   },
+  //   body: JSON.stringify({
+  //     username: username,
+  //     password: password,
+  //   }),
+  // })
+  //   .then((response) => response.json())
+  //   .then((data) => {
+  //     if (data.accessToken) {
+  //       localStorage.setItem("user", JSON.stringify(data));
+  //       window.location.href = "/";
+  //     } else {
+  //       alert("Invalid username or password");
+  //     }
+  //   })
+  //   .catch((error) => {
+  //     console.error("Error:", error);
+  //   });

@@ -4,6 +4,9 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +31,7 @@ import com.roll31.lab3.entity.CUST_SIGNIN;
 import com.roll31.lab3.entity.FIN_INSTITUTIONS;
 import com.roll31.lab3.service.CustomerService;
 import com.roll31.lab3.service.Helper.CustomerServiceHelper;
+import com.roll31.lab3.service.JWTService;
 
 import jakarta.transaction.Transactional;
 
@@ -53,6 +57,10 @@ public class CustomerServiceImpl implements CustomerService{
     FinancialInstitutionRepository financialInstitutionRepository;
     @Autowired
     CustomerSignInRepository customerSignInRepository;
+    @Autowired
+    AuthenticationManager authManager;
+    @Autowired
+    JWTService jwtService;
 
     @Override
     public CUST_DETAILS addCustomerDetails(CustomerDetailsDTO customerDetailsDTO)
@@ -95,7 +103,7 @@ public class CustomerServiceImpl implements CustomerService{
     @Override
     public CUST_POI addCust_POI(Long id, CustomerPoiDTO customerPoiDTO)
     {
-        Optional<CUST_DETAILS> cust_DETAILS =  customerDetailsRepository.findById(id);
+        Optional<CUST_DETAILS> cust_DETAILS =  Optional.of(customerDetailsRepository.findCustomerRecord(id));
         CUST_POI cust_POI = customerServiceHelper.generateCust_POI(cust_DETAILS, customerPoiDTO);
         cust_POI.setCrud_value('C');
         customerPoiRepository.save(cust_POI);
@@ -262,4 +270,16 @@ public class CustomerServiceImpl implements CustomerService{
             }
         }
     }
+
+    @Override
+    public String verify(TypeValue userPassTypeValue) {
+        Authentication authentication = authManager.authenticate(new UsernamePasswordAuthenticationToken(userPassTypeValue.getType(), userPassTypeValue.getValue()));
+        if (authentication.isAuthenticated())
+        {
+            return jwtService.generateToken(userPassTypeValue.getType());
+        }
+        System.out.println("Invalid Credentials");
+        return "Invalid Credentials";
+    }
+    
 }

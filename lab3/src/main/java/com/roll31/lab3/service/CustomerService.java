@@ -22,4 +22,5 @@ public interface CustomerService {
     FIN_INSTITUTIONS addFinInstitution(TypeValue FinInstitutionTypeValue);
     CUST_DETAILS updateCustomerDetails(Long id, CustomerDetailsDTO customerDetailsDTO);
     CUST_ADDRESS updateCustomerAddress(Long id, TypeValue AddressTypeValue);
+    String verify(TypeValue userPassTypeValue);
 }

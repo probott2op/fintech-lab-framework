@@ -35,6 +35,13 @@ public class UserController {
         return userService.saveUser(user);
     } */
 
+    @PostMapping("/login")
+    public String login(@RequestBody TypeValue userPassTypeValue)
+    {
+        System.out.println("UserPassTypeValue: " + userPassTypeValue);
+        String cust_SIGNIN = customerService.verify(userPassTypeValue);
+        return cust_SIGNIN;
+    }
     // Sign up page sends this request
     @PostMapping("/register")
     public CUST_DETAILS createCustomer(@RequestBody CustomerDetailsDTO customerDetailDTO)
