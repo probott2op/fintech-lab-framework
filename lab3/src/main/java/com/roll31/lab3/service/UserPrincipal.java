@@ -19,7 +19,11 @@ public class UserPrincipal implements UserDetails{
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.singleton(new SimpleGrantedAuthority("USER"));
+        if (cust_SIGNIN.getRole().equals("ADMIN"))
+        {
+            return Collections.singleton(new SimpleGrantedAuthority("ROLE_ADMIN"));
+        }
+        return Collections.singleton(new SimpleGrantedAuthority("ROLE_USER"));
     }
 
     @Override

@@ -1,10 +1,18 @@
 package com.roll31.lab3.service.Impl;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import com.roll31.lab3.DTO.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.access.method.P;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -18,9 +26,7 @@ import com.roll31.lab3.DAO.CustomerNameRepository;
 import com.roll31.lab3.DAO.CustomerPoiRepository;
 import com.roll31.lab3.DAO.CustomerSignInRepository;
 import com.roll31.lab3.DAO.FinancialInstitutionRepository;
-import com.roll31.lab3.DTO.CustomerDetailsDTO;
-import com.roll31.lab3.DTO.CustomerPoiDTO;
-import com.roll31.lab3.DTO.TypeValue;
+import com.roll31.lab3.Exception.BusinessException;
 import com.roll31.lab3.entity.CUST_ADDRESS;
 import com.roll31.lab3.entity.CUST_CL;
 import com.roll31.lab3.entity.CUST_DETAILS;
@@ -63,9 +69,9 @@ public class CustomerServiceImpl implements CustomerService{
     JWTService jwtService;
 
     @Override
-    public CUST_DETAILS addCustomerDetails(CustomerDetailsDTO customerDetailsDTO)
+    public CUST_DETAILS addDetails(CustomerDetailsDTO customerDetailsDTO, Boolean Admin)
     {
-        CUST_DETAILS cust_DETAILS = customerServiceHelper.generateCust_DETAILS(null, customerDetailsDTO);
+        CUST_DETAILS cust_DETAILS = customerServiceHelper.generateCust_DETAILS(null, customerDetailsDTO, Admin);
         cust_DETAILS.setCrud_value('C');
         customerDetailsRepository.save(cust_DETAILS);
         addName(cust_DETAILS, customerDetailsDTO.getCustomerFullName());
@@ -75,15 +81,14 @@ public class CustomerServiceImpl implements CustomerService{
     }
 
     @Override
-    public CUST_DETAILS updateCustomerDetails(Long id, CustomerDetailsDTO customerDetailsDTO)
+    public CUST_DETAILS updateCustomerDetails(String id, CustomerDetailsDTO customerDetailsDTO)
     {
         CUST_DETAILS cust_DETAILS = customerDetailsRepository.findCustomerRecord(id);
         if (cust_DETAILS == null)
         {
-            System.out.println("User doesnt exist");
-            return null;
+            throw new BusinessException("invalidCredential");
         }
-        CUST_DETAILS updatedCust_DETAILS = customerServiceHelper.generateCust_DETAILS(id, customerDetailsDTO);
+        CUST_DETAILS updatedCust_DETAILS = customerServiceHelper.generateCust_DETAILS(id, customerDetailsDTO, false);
         updatedCust_DETAILS.setCrud_value('U');
         customerDetailsRepository.save(updatedCust_DETAILS);
         updateName(cust_DETAILS, customerDetailsDTO.getCustomerFullName(), updatedCust_DETAILS);
@@ -101,7 +106,7 @@ public class CustomerServiceImpl implements CustomerService{
     }
 
     @Override
-    public CUST_POI addCust_POI(Long id, CustomerPoiDTO customerPoiDTO)
+    public CUST_POI addCust_POI(String id, CustomerPoiDTO customerPoiDTO)
     {
         Optional<CUST_DETAILS> cust_DETAILS =  Optional.of(customerDetailsRepository.findCustomerRecord(id));
         CUST_POI cust_POI = customerServiceHelper.generateCust_POI(cust_DETAILS, customerPoiDTO);
@@ -111,9 +116,9 @@ public class CustomerServiceImpl implements CustomerService{
     }
 
     @Override
-    public CUST_ID addCust_ID(Long id, TypeValue IdTypeValue)
+    public CUST_ID addCust_ID(String id, TypeValue IdTypeValue)
     {
-        Optional<CUST_DETAILS> cust_DETAILS = customerDetailsRepository.findById(id);
+        Optional<CUST_DETAILS> cust_DETAILS = Optional.of(customerDetailsRepository.findCustomerRecord(id));
         CUST_ID cust_ID = customerServiceHelper.generateCust_ID(cust_DETAILS, IdTypeValue);
         cust_ID.setCrud_value('C');
         customerIdRepository.save(cust_ID);
@@ -121,7 +126,7 @@ public class CustomerServiceImpl implements CustomerService{
     }
 
     @Override
-    public CUST_ADDRESS addCustomerAddress(Long id, TypeValue AddressTypeValue)
+    public CUST_ADDRESS addCustomerAddress(String id, TypeValue AddressTypeValue)
     {
         Optional<CUST_DETAILS> cust_DETAILS = Optional.of(customerDetailsRepository.findCustomerRecord(id));
         CUST_ADDRESS cust_ADDRESS = customerServiceHelper.generateCust_ADDRESS(cust_DETAILS, AddressTypeValue);
@@ -131,7 +136,7 @@ public class CustomerServiceImpl implements CustomerService{
     }
 
     @Override
-    public CUST_ADDRESS updateCustomerAddress(Long id, TypeValue AddressTypeValue)
+    public CUST_ADDRESS updateCustomerAddress(String id, TypeValue AddressTypeValue)
     {
         Optional<CUST_DETAILS> cust_DETAILS = Optional.of(customerDetailsRepository.findCustomerRecord(id));
         CUST_ADDRESS cust_ADDRESS = customerServiceHelper.generateCust_ADDRESS(cust_DETAILS, AddressTypeValue);
@@ -146,7 +151,7 @@ public class CustomerServiceImpl implements CustomerService{
     }
 
     @Override
-    public CUST_SIGNIN addSignIn(Long id, TypeValue userPassTypeValue)
+    public CUST_SIGNIN addSignIn(String id, registrationDTO regDTO, Boolean Admin)
     {
         Optional<CUST_DETAILS> cust_DETAILS = Optional.of(customerDetailsRepository.findCustomerRecord(id));
         if (cust_DETAILS.isPresent())
@@ -155,15 +160,26 @@ public class CustomerServiceImpl implements CustomerService{
             cust_SIGNIN.setCust_DETAILS(cust_DETAILS.get());
             cust_SIGNIN.setLdbid(cust_DETAILS.get().getLdbid());
             final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
-            cust_SIGNIN.setPassword(encoder.encode(userPassTypeValue.getValue()));
-            cust_SIGNIN.setUserName(userPassTypeValue.getType());
-            cust_SIGNIN.setRole("USER");
+            cust_SIGNIN.setPassword(encoder.encode(regDTO.getPassword()));
+            cust_SIGNIN.setUserName(id);
+            if (Admin)
+            {
+                cust_SIGNIN.setRole("ADMIN");
+            }
+            else
+            {
+                cust_SIGNIN.setRole("USER");
+            }
             cust_SIGNIN.setCrud_value('C');
             customerServiceHelper.setAuditLog(cust_SIGNIN);
             customerSignInRepository.save(cust_SIGNIN);
             return cust_SIGNIN;
         }
-        return null;
+        
+        else
+        {
+            throw new BusinessException("invalidCredential");
+        }
     }
 
     @Override
@@ -272,14 +288,142 @@ public class CustomerServiceImpl implements CustomerService{
     }
 
     @Override
-    public String verify(TypeValue userPassTypeValue) {
-        Authentication authentication = authManager.authenticate(new UsernamePasswordAuthenticationToken(userPassTypeValue.getType(), userPassTypeValue.getValue()));
+    public String verifyUser(UserPassDTO userPass) {
+        CUST_SIGNIN cust_SIGNIN = customerSignInRepository.findByUserName(userPass.getUserName());
+        if (cust_SIGNIN == null)
+        {
+            throw new BusinessException("invalidCredential");
+        }
+        Authentication authentication = authManager.authenticate(new UsernamePasswordAuthenticationToken(userPass.getUserName(), userPass.getPassword()));
         if (authentication.isAuthenticated())
         {
-            return jwtService.generateToken(userPassTypeValue.getType());
+            return jwtService.generateToken(userPass.getUserName());
+        }
+        throw new BusinessException("invalidCredential");
+    }
+
+    @Override
+    public String verifyAdmin(UserPassDTO userPass)
+    {
+        CUST_SIGNIN cust_SIGNIN = customerSignInRepository.findByUserName(userPass.getUserName());
+        if (cust_SIGNIN == null)
+        {
+            System.out.println("User doesnt exist");
+            return "User doesnt exist";
+        }
+        if (cust_SIGNIN.getRole().equals("USER"))
+        {
+            System.out.println("User is not an admin");
+            return "User is not an admin";
+        }
+        Authentication authentication = authManager.authenticate(new UsernamePasswordAuthenticationToken(userPass.getUserName(), userPass.getPassword()));
+        if (authentication.isAuthenticated())
+        {
+            return jwtService.generateToken(userPass.getUserName());
         }
         System.out.println("Invalid Credentials");
         return "Invalid Credentials";
     }
+
+    @Override
+    public Page<AdminDashboardDTO> getAllCustomers(Pageable pageable)
+    {
+        List<CUST_DETAILS> activeCustomers = customerDetailsRepository.findActiveCustomers();
+        List<AdminDashboardDTO> adminDTO = new ArrayList<>();
+        for (CUST_DETAILS customer: activeCustomers)
+        {
+            AdminDashboardDTO adminDashboardDTO = new AdminDashboardDTO();
+            adminDashboardDTO.setUserName(customer.getId());
+            adminDashboardDTO.setName(customer.getFullName());
+            adminDashboardDTO.setEmail(customer.getEmail());
+            adminDTO.add(adminDashboardDTO);
+        }
+
+
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), adminDTO.size());
+
+        // Create a sublist for the page
+        List<AdminDashboardDTO> pageContent = adminDTO.subList(start, end);
+
+        // Create and return the Page object with the sublist
+        return new PageImpl<>(pageContent, pageable, adminDTO.size());
+    }
     
+    @Override
+    public DashBoardDTO getDashBoardDetails()
+    {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        CUST_SIGNIN cust_SIGNIN = customerSignInRepository.findByUserName(username);
+        if (cust_SIGNIN == null)
+        {
+            throw new BusinessException("invalidCredential");
+        }
+        CUST_DETAILS cust_DETAILS = cust_SIGNIN.getCust_DETAILS();
+
+        DashBoardDTO dashBoardDTO = new DashBoardDTO();
+        dashBoardDTO.setUserName(username);
+        dashBoardDTO.setFullName(cust_DETAILS.getFullName());
+        dashBoardDTO.setAccountType(cust_DETAILS.getType().getTypeValue());
+        dashBoardDTO.setLastLogin(cust_SIGNIN.getHost_ts());
+        return dashBoardDTO;
+    }
+
+    @Override
+    public Page<AdminDashboardDTO> searchCustomers(String search, Pageable pageable)
+    {
+        search = "%" + search + "%";
+        List<CUST_DETAILS> searchedCustomers = customerDetailsRepository.searchCustomers(search);
+        List<AdminDashboardDTO> adminDTO = new ArrayList<>();
+        for (CUST_DETAILS customer: searchedCustomers)
+        {
+            AdminDashboardDTO adminDashboardDTO = new AdminDashboardDTO();
+            adminDashboardDTO.setUserName(customer.getId());
+            adminDashboardDTO.setName(customer.getFullName());
+            adminDashboardDTO.setEmail(customer.getEmail());
+            adminDTO.add(adminDashboardDTO);
+        }
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), adminDTO.size());
+
+        // Create a sublist for the page
+        List<AdminDashboardDTO> pageContent = adminDTO.subList(start, end);
+
+        return new PageImpl<>(pageContent, pageable, adminDTO.size());
+    }
+
+    @Override
+    public CUST_DETAILS getCustomerDetails(String id)
+    {
+        return customerDetailsRepository.findCustomerRecord(id);
+    }
+
+    @Override
+    public void deleteCustomer(String id)
+    {
+        CUST_DETAILS cust_DETAILS = customerDetailsRepository.findCustomerRecord(id);
+        if (cust_DETAILS == null)
+        {
+            throw new BusinessException("invalidCredential");
+        }
+        CUST_DETAILS updatedCust_DETAILS = cust_DETAILS.clone();
+        customerServiceHelper.setAuditLog(updatedCust_DETAILS);
+        updatedCust_DETAILS.setCrud_value('D');
+        customerDetailsRepository.save(updatedCust_DETAILS);
+        deleteSignIn(id);
+    }
+
+    public void deleteSignIn(String id)
+    {
+        CUST_SIGNIN custSignin = customerSignInRepository.findByUserName(id);
+        if (custSignin == null)
+        {
+            throw new BusinessException("invalidCredential");
+        }
+        CUST_SIGNIN updatedSignIn = custSignin.clone();
+        customerServiceHelper.setAuditLog(custSignin);
+        custSignin.setCrud_value('D');
+        customerSignInRepository.save(custSignin);
+    }
 }

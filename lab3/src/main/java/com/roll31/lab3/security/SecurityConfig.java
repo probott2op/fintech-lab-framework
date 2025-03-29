@@ -29,8 +29,10 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception
     {
         http.csrf(customizer -> customizer.disable());
+        http.cors(Customizer.withDefaults());
         http.authorizeHttpRequests(customizer -> {
-                                    customizer.requestMatchers("/v1/users/login", "/v1/users/register/*", "/v1/users/addClassification", "/v1/users/addFinancialInstitution").permitAll();
+                                    customizer.requestMatchers("/v1/users/login", "/v1/register", "/v1/admin/login", "/swagger-ui/**", "/v3/api-docs").permitAll();
+                                    customizer.requestMatchers("/v1/admin/**").hasRole("ADMIN");
                                     customizer.anyRequest().authenticated();
                                     }
                                 );

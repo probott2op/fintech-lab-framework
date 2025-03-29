@@ -17,6 +17,7 @@ import com.roll31.lab3.DAO.FinancialInstitutionRepository;
 import com.roll31.lab3.DTO.CustomerDetailsDTO;
 import com.roll31.lab3.DTO.CustomerPoiDTO;
 import com.roll31.lab3.DTO.TypeValue;
+import com.roll31.lab3.Exception.BusinessException;
 import com.roll31.lab3.entity.AuditLoggable;
 import com.roll31.lab3.entity.CUST_ADDRESS;
 import com.roll31.lab3.entity.CUST_CL;
@@ -43,22 +44,35 @@ public class CustomerServiceHelper {
     @Autowired
     FinancialInstitutionRepository financialInstitutionRepository;
 
-    public CUST_DETAILS generateCust_DETAILS(Long id, CustomerDetailsDTO customerDetailsDTO)
+    public CUST_DETAILS generateCust_DETAILS(String id, CustomerDetailsDTO customerDetailsDTO, Boolean Admin)
     {
         CUST_DETAILS cust_DETAILS = new CUST_DETAILS();
 
         // Generating the id for the new customer;
         if (id == null)
         {
-            Long max_id = customerDetailsRepository.findMaxCustId();
+            String max_str_id = customerDetailsRepository.findMaxCustId("U");
+            Long max_id;
             // no record exists in the db, so first record
-            if (max_id == null)
+            if (max_str_id == null)
             {
                 max_id = Long.valueOf(1);
             }
+            else
+            {
+                max_id = Long.parseLong(max_str_id.substring(1)) % 100000 + Long.valueOf(1);
+            }
             Long year = Long.valueOf(LocalDate.now().getYear());
             Long cust_id = (year % 1000)*100000 + max_id;
-            cust_DETAILS.setId(cust_id);
+            String final_cust_id;
+            if (Admin)
+            {
+                final_cust_id = "A" + cust_id.toString();
+            }
+            else {
+                final_cust_id = "U" + cust_id.toString();
+            }
+            cust_DETAILS.setId(final_cust_id);
         }
         // this is for updating the customer
         else
@@ -73,14 +87,32 @@ public class CustomerServiceHelper {
         cust_DETAILS.setDob(customerDetailsDTO.getDob());
         // transferring status
         cust_DETAILS.setStatus(customerDetailsDTO.getStatus());
-        // transferring mobile
-        cust_DETAILS.setMobile(customerDetailsDTO.getMobile());
-        // transferring contact
-        // cust_DETAILS.setContact(customerDetailsDTO.getContact());
-        // transferring email
-        cust_DETAILS.setEmail(customerDetailsDTO.getEmail());
-        // transferring country
-        List<TypeValue> address = customerDetailsDTO.getCustomerFullAddress();
+        // transferring mobile (check for null and if mobile already exists)
+        if (customerDetailsDTO.getMobile() == null)
+        {
+            throw new BusinessException("mobileError");
+        }
+       else if (!customerDetailsRepository.searchCustomerByMobile(customerDetailsDTO.getMobile(), cust_DETAILS.getId()).isEmpty())
+        {
+            throw new BusinessException("mobileError");
+        }
+        else
+        {
+            cust_DETAILS.setMobile(customerDetailsDTO.getMobile());
+        }
+        // transferring email (check for null and if email already exists)
+        if (customerDetailsDTO.getEmail() == null)
+        {
+            throw new BusinessException("emailError");
+        }
+        else if (!customerDetailsRepository.searchCustomerByEmail(customerDetailsDTO.getEmail(), cust_DETAILS.getId()).isEmpty())
+        {
+            throw new BusinessException("emailError");
+        }
+        else
+        {
+            cust_DETAILS.setEmail(customerDetailsDTO.getEmail());
+        }
         // giving the ldbid
         FIN_INSTITUTIONS fin_inst = financialInstitutionRepository.findIdByName(customerDetailsDTO.getBankName());
         if (fin_inst != null)
@@ -89,9 +121,10 @@ public class CustomerServiceHelper {
         }
         else
         {
-            System.out.print(customerDetailsDTO.getBankName());
-            System.out.println("Some error!");
+            throw new BusinessException("invalidBankName");
         }
+        // transferring country
+        List<TypeValue> address = customerDetailsDTO.getCustomerFullAddress();
         for (TypeValue territory: address)
         {
             if (territory.getType().toLowerCase().equals("country"))
@@ -113,12 +146,6 @@ public class CustomerServiceHelper {
         // setting the audit log
         setAuditLog(cust_DETAILS);
 
-        // create a list of CUST_NAME objects
-        /*List<CUST_NAME> cust_NAME_list = generateCust_NAME(cust_DETAILS, nameParts);
-        //setting the one to many relationship
-        cust_DETAILS.setCust_NAME(cust_NAME_list);*/
-
-        // returning the now filled CUST_DETAILS entity object
         return cust_DETAILS;
     }
     public CUST_CL generateCust_CL(TypeValue nameTypeValue)
@@ -170,7 +197,7 @@ public class CustomerServiceHelper {
         }
         else
         {
-            //throw new Exception("Id doesnt exist");
+            throw new BusinessException("invalidCredential");
         }
         // setting the actual address value
         cust_ADDRESS.setValue(territory.getValue());
@@ -195,7 +222,7 @@ public class CustomerServiceHelper {
          }
          else
          {
-            //throw new Exception("Id doesnt exist");
+            throw new BusinessException("invalidCredential");
          }
          // setting the actual ID value
          cust_ID.setValue(IdTypeValue.getValue());
@@ -220,7 +247,7 @@ public class CustomerServiceHelper {
         }
         else
         {
-            //throw new Exception("Id doesnt exist");
+            throw new BusinessException("invalidCredential");
         }
         // set start and end date of the id
         cust_POI.setStart(customerPoiDTO.getStart());

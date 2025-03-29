@@ -82,4 +82,5 @@ public class CustomerDetailsDTO {
         this.bankName = bankName;
     }
 
+
 }

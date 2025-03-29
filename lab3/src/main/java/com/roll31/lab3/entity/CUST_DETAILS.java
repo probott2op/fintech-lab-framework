@@ -3,6 +3,7 @@ package com.roll31.lab3.entity;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -27,7 +28,7 @@ public class CUST_DETAILS implements AuditLoggable{
     @Column(name = "CSTDET_IDFR")
     private Long idfr;
     @Column(name = "CST_ID")
-    private Long id;
+    private String id;
     @Column(name = "CSTDET_FULL_NAME")
     private String fullName;
     @Column(name = "CSTDET_DOB")
@@ -95,11 +96,11 @@ public class CUST_DETAILS implements AuditLoggable{
         this.idfr = idfr;
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 
@@ -255,6 +256,22 @@ public class CUST_DETAILS implements AuditLoggable{
 
     public void setLdbid(FIN_INSTITUTIONS ldbid) {
         this.ldbid = ldbid;
+    }
+
+    public CUST_DETAILS clone()
+    {
+        CUST_DETAILS newCust = new CUST_DETAILS();
+        newCust.setType(this.getType());
+        newCust.setId(this.getId());
+        newCust.setFullName(this.getFullName());
+        newCust.setDob(this.getDob());
+        newCust.setStatus(this.getStatus());
+        newCust.setMobile(this.getMobile());
+        newCust.setEmail(this.getEmail());
+        newCust.setCountry(this.getCountry());
+        newCust.setCrud_value(this.getCrud_value());
+        newCust.setLdbid(this.getLdbid());
+        return newCust;
     }
 }
 

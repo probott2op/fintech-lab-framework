@@ -192,4 +192,13 @@ public class CUST_SIGNIN implements AuditLoggable{
     public void setUUID(String UUID) {
         this.UUID = UUID;
     }
+
+    public CUST_SIGNIN clone()
+    {
+        CUST_SIGNIN updatedSignIn = new CUST_SIGNIN();
+        updatedSignIn.setUserName(this.getUserName());
+        updatedSignIn.setPassword(this.getPassword());
+        updatedSignIn.setRole(this.getRole());
+        return updatedSignIn;
+    }
 }

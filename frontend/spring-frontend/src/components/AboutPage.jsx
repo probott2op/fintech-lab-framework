@@ -13,7 +13,7 @@ function LoginPage() {
   const navigate = useNavigate();
 
   function redirectRegister() {
-    navigate('/register');
+    navigate('/users/login');
   }
 
   return (
@@ -27,11 +27,11 @@ function LoginPage() {
             <h1 className="display-4">Welcome to Krutev Bank</h1>
             <p className="lead"><em>Empowering your financial future</em></p>
             <p>
-              At Krutev Bank, we are more than just a bank — we're your partner in building a secure and prosperous future.
+              At Krutev Bank, we are more than just a bank — we&#39;re your partner in building a secure and prosperous future.
               With personalized financial services, cutting-edge technology, and a commitment to community,
               we’re here to help you make the most of your money.
             </p>
-            <button className="btn btn-primary btn-lg" onClick={redirectRegister}>Sign Up</button>
+            <button className="btn btn-primary btn-lg" onClick={redirectRegister}>Login</button>
           </div>
           <div className="col-md-6">
             <img src={empowering} alt="Empowering the future" className="img-fluid empowering-img" />
